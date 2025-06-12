@@ -49,6 +49,9 @@ run_with_spinner() {
 run_with_spinner "Removing chezmoi state" rm -f "$HOME/.local/share/chezmoi/state.db"
 run_with_spinner "Deleting old toolbox" toolbox rm -f ${TOOLBOX_NAME} || true
 
+# Ensure no leftover host root-less pause helpers exist
+pkill -x pause 2>/dev/null || true
+
 echo "📦 Creating a fresh '${TOOLBOX_NAME}' toolbox for Fedora ${FEDORA_RELEASE}..."
 toolbox create -r ${FEDORA_RELEASE} ${TOOLBOX_NAME}
 
@@ -56,10 +59,6 @@ toolbox create -r ${FEDORA_RELEASE} ${TOOLBOX_NAME}
 sed -i 's|/usr/bin/zsh|/bin/bash|' /var/home/${USER}/.config/toolbox/${TOOLBOX_NAME}.json || true
 
 run_with_spinner "Booting container" podman start ${TOOLBOX_NAME}
-
-# --- Clean pause processes only; don't run podman inside container ---
-podman exec --user james ${TOOLBOX_NAME} \
-  pkill -x pause 2>/dev/null || true
 
 # --- Phase 2: Container Setup ---
 echo "🛠️  Configuring container as user 'james' via chezmoi..."
