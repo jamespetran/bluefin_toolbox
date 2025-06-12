@@ -12,7 +12,7 @@ set -e
 
 # --- Configuration ---
 TOOLBOX_NAME="dev"
-FEDORA_RELEASE="42" # <-- Set to the Fedora version you want.
+FEDORA_RELEASE="40" # <-- Set to the Fedora version you want.
 DOTFILES_REPO="https://github.com/jamespetran/dotfiles.git"
 export PODMAN_ROOT="$HOME/.local/share/containers/$(hostname)-toolbox"
 alias podman="podman --root=$PODMAN_ROOT --runroot=$PODMAN_ROOT/run"
