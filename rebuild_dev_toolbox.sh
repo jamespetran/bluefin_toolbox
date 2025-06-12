@@ -56,11 +56,13 @@ toolbox create -r ${FEDORA_RELEASE} ${TOOLBOX_NAME}
 sed -i 's|/usr/bin/zsh|/bin/bash|' /var/home/${USER}/.config/toolbox/${TOOLBOX_NAME}.json || true
 
 run_with_spinner "Booting container" podman start ${TOOLBOX_NAME}
+
+# --- One-time storage migration inside the toolbox --------------------
 podman exec --user james ${TOOLBOX_NAME} \
        timeout 15s podman system migrate --log-level=error || true
 
 # --- Phase 2: Container Setup ---
-echo "\U0001F6E0️  Configuring container as user 'james' via chezmoi..."
+echo "🛠️  Configuring container as user 'james' via chezmoi..."
 podman exec --user james -i ${TOOLBOX_NAME} /bin/bash <<EOF
 set -e
 
@@ -69,7 +71,7 @@ echo "🏗️  Installing git & curl"
 sudo dnf install -y git curl
 
 # --- chezmoi Install ---
-echo "📥  Installing chezmoi"
+echo "👅  Installing chezmoi"
 sudo sh -c "\$(curl -fsLS get.chezmoi.io)" -- -b /usr/local/bin
 export PATH="\$PATH:/usr/local/bin"
 
@@ -80,7 +82,7 @@ chezmoi apply --force --no-tty -v
 EOF
 
 # --- Phase 3: Finalization Pass ---
-echo "\U0001F9F0 Reapplying chezmoi to ensure all changes land cleanly..."
+echo "🧰 Reapplying chezmoi to ensure all changes land cleanly..."
 podman exec --user james -i ${TOOLBOX_NAME} chezmoi apply --force --no-tty -v
 run_with_spinner "Podman system migrate" timeout 30s podman system migrate || true
 
