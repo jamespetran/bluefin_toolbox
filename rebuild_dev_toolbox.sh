@@ -12,10 +12,16 @@ set -e
 
 # --- Configuration ---
 TOOLBOX_NAME="dev"
-FEDORA_RELEASE="40" # <-- Set to the Fedora version you want.
+FEDORA_RELEASE="40" # Match your Bluefin base
 DOTFILES_REPO="https://github.com/jamespetran/dotfiles.git"
+
+# Isolate toolbox storage so it won’t clash with your day-to-day containers
 export PODMAN_ROOT="$HOME/.local/share/containers/$(hostname)-toolbox"
 alias podman="podman --root=$PODMAN_ROOT --runroot=$PODMAN_ROOT/run"
+
+# Ensure the custom storage dirs exist & are writable
+mkdir -p  "$PODMAN_ROOT" "$PODMAN_ROOT/run"
+chmod 700 "$PODMAN_ROOT" "$PODMAN_ROOT/run"
 
 # --- Spinner Utility ---
 run_with_spinner() {
@@ -58,8 +64,8 @@ sed -i 's|/usr/bin/zsh|/bin/bash|' /var/home/${USER}/.config/toolbox/${TOOLBOX_N
 run_with_spinner "Booting container" podman start ${TOOLBOX_NAME}
 
 # --- One-time storage migration inside the toolbox --------------------
-podman exec --user james ${TOOLBOX_NAME} \
-       timeout 15s podman system migrate --log-level=error || true
+#podman exec --user james ${TOOLBOX_NAME} \
+#       timeout 15s podman system migrate --log-level=error || true
 
 # --- Phase 2: Container Setup ---
 echo "🛠️  Configuring container as user 'james' via chezmoi..."
@@ -84,7 +90,7 @@ EOF
 # --- Phase 3: Finalization Pass ---
 echo "🧰 Reapplying chezmoi to ensure all changes land cleanly..."
 podman exec --user james -i ${TOOLBOX_NAME} chezmoi apply --force --no-tty -v
-run_with_spinner "Podman system migrate" timeout 30s podman system migrate || true
+#run_with_spinner "Podman system migrate" timeout 30s podman system migrate || true
 
 # --- Completion ---
 echo "✅ All done! Your '${TOOLBOX_NAME}' (Fedora ${FEDORA_RELEASE}) toolbox has been rebuilt."
