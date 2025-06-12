@@ -2,6 +2,8 @@
 #
 # rebuild_dev_toolbox.sh
 #
+# Rebuilds the 'dev' toolbox without trying to run Podman inside it.
+# Should be run from the host. Avoids Podman namespace hangs.
 # Destroys and rebuilds the 'dev' toolbox for a specific Fedora release,
 # leveraging chezmoi as the single source of truth for setup.
 # It should be run from the host (Bluefin).
@@ -12,10 +14,8 @@ set -e
 
 # --- Configuration ---
 TOOLBOX_NAME="dev"
-FEDORA_RELEASE="42" # <-- Set to the Fedora version you want.
+FEDORA_RELEASE="42"
 DOTFILES_REPO="https://github.com/jamespetran/dotfiles.git"
-export PODMAN_ROOT="$HOME/.local/share/containers/$(hostname)-toolbox"
-alias podman="podman --root=$PODMAN_ROOT --runroot=$PODMAN_ROOT/run"
 
 # --- Spinner Utility ---
 run_with_spinner() {
@@ -57,9 +57,9 @@ sed -i 's|/usr/bin/zsh|/bin/bash|' /var/home/${USER}/.config/toolbox/${TOOLBOX_N
 
 run_with_spinner "Booting container" podman start ${TOOLBOX_NAME}
 
-# --- One-time storage migration inside the toolbox --------------------
+# --- Clean pause processes only; don't run podman inside container ---
 podman exec --user james ${TOOLBOX_NAME} \
-       timeout 15s podman system migrate --log-level=error || true
+  pkill -x pause 2>/dev/null || true
 
 # --- Phase 2: Container Setup ---
 echo "🛠️  Configuring container as user 'james' via chezmoi..."
@@ -84,7 +84,6 @@ EOF
 # --- Phase 3: Finalization Pass ---
 echo "🧰 Reapplying chezmoi to ensure all changes land cleanly..."
 podman exec --user james -i ${TOOLBOX_NAME} chezmoi apply --force --no-tty -v
-run_with_spinner "Podman system migrate" timeout 30s podman system migrate || true
 
 # --- Completion ---
 echo "✅ All done! Your '${TOOLBOX_NAME}' (Fedora ${FEDORA_RELEASE}) toolbox has been rebuilt."
