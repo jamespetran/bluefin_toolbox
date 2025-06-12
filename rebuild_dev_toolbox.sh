@@ -56,6 +56,8 @@ toolbox create -r ${FEDORA_RELEASE} ${TOOLBOX_NAME}
 sed -i 's|/usr/bin/zsh|/bin/bash|' /var/home/${USER}/.config/toolbox/${TOOLBOX_NAME}.json || true
 
 run_with_spinner "Booting container" podman start ${TOOLBOX_NAME}
+podman exec --user james ${TOOLBOX_NAME} \
+       timeout 15s podman system migrate --log-level=error || true
 
 # --- Phase 2: Container Setup ---
 echo "\U0001F6E0️  Configuring container as user 'james' via chezmoi..."
